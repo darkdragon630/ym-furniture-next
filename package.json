@@ -1,0 +1,29 @@
+{
+  "name": "ym-furnitur-next",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint"
+  },
+  "dependencies": {
+    "@fortawesome/fontawesome-free": "^7.2.0",
+    "@supabase/ssr": "^0.10.3",
+    "@supabase/supabase-js": "^2.39.0",
+    "chart.js": "^4.5.1",
+    "critters": "^0.0.20",
+    "hls.js": "^0.14.17",
+    "next": "^16.2.7",
+    "react": "18.3.1",
+    "react-chartjs-2": "^5.3.1",
+    "react-dom": "18.3.1"
+  },
+  "devDependencies": {
+    "@types/node": "20.11.0",
+    "@types/react": "18.3.3",
+    "typescript": "5.4.5"
+  }
+}

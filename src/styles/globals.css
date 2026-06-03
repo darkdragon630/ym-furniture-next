@@ -1,0 +1,33 @@
+@import './style.css';
+@import './admin.css';
+@import './admin-auth.css';
+@import './auth.css';
+@import './cart.css';
+@import './pagination.css';
+@import './responsive.css';
+
+/* Font faces */
+:root {
+  --font-playfair: 'Playfair Display', serif;
+  --font-dm-sans: 'DM Sans', sans-serif;
+}
+
+/* Reset styles */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: var(--font-dm-sans);
+  background: #FFFDF7;
+  color: #1A1209;
+  line-height: 1.6;
+}
+
+/* ... (rest of the CSS) */

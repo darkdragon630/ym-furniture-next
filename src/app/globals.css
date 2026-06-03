@@ -1,0 +1,62 @@
+/* Import Font Awesome */
+@import url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css');
+
+@import './style.css';
+@import './admin.css';
+@import './admin-auth.css';
+@import './auth.css';
+@import './cart.css';
+@import './pagination.css';
+@import './responsive.css';
+
+
+
+/* Font faces */
+:root {
+  --font-playfair: 'Playfair Display', serif;
+  --font-dm-sans: 'DM Sans', sans-serif;
+}
+
+/* Reset styles */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: var(--font-dm-sans);
+  background: #FFFDF7;
+  color: #1A1209;
+  line-height: 1.6;
+}
+
+
+/* Navbar scroll effect */
+.navbar.scrolled {
+  background: rgba(26, 18, 9, 0.98);
+  box-shadow: 0 2px 20px rgba(0, 0, 0, 0.3);
+}
+
+/* Hamburger animation */
+.hamburger span {
+  transition: all 0.3s ease;
+}
+
+.nav-links.active ~ .nav-right .hamburger span:nth-child(1) {
+  transform: rotate(45deg) translate(5px, 5px);
+}
+
+.nav-links.active ~ .nav-right .hamburger span:nth-child(2) {
+  opacity: 0;
+}
+
+.nav-links.active ~ .nav-right .hamburger span:nth-child(3) {
+  transform: rotate(-45deg) translate(5px, -5px);
+}
+
+/* ... (rest of the CSS) */
