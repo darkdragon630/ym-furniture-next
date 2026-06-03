@@ -1,3 +1,5 @@
+import { supabase } from './supabase'
+
 // Format Rupiah
 export function formatRupiah(amount: number) {
   return new Intl.NumberFormat('id-ID', {
