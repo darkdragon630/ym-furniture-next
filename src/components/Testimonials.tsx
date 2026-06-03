@@ -3,8 +3,19 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 
+// Definisikan interface untuk data testimoni
+interface Testimonial {
+  id: number
+  nama: string
+  kota: string | null
+  bintang: number
+  teks: string
+  created_at: string
+}
+
 export default function Testimonials() {
-  const [testimonials, setTestimonials] = useState([])
+  // ✅ Berikan type annotation
+  const [testimonials, setTestimonials] = useState<Testimonial[]>([])
   const [currentPage, setCurrentPage] = useState(1)
   const [itemsPerPage] = useState(6)
   const [loading, setLoading] = useState(true)
@@ -55,7 +66,7 @@ export default function Testimonials() {
       <h2 className="section-title">Testimoni Pelanggan</h2>
 
       <div className="testi-grid" id="testiGrid">
-        {currentItems.map((t: any) => (
+        {currentItems.map((t: Testimonial) => (
           <div key={t.id} className="testi-card">
             <div className="testi-stars">{'⭐'.repeat(t.bintang)}</div>
             <p className="testi-text">"{t.teks}"</p>
