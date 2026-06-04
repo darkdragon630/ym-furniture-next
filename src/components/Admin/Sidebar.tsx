@@ -24,11 +24,8 @@ export default function Sidebar({
     { id: 'pengaturan', label: 'Pengaturan',       icon: 'fa-cog' },
   ]
 
-  // ✅ Load Font Awesome jika belum ada
   useEffect(() => {
-    const existing = document.querySelector(
-      'link[href*="font-awesome"], link[href*="fontawesome"]'
-    )
+    const existing = document.querySelector('link[href*="font-awesome"], link[href*="fontawesome"]')
     if (!existing) {
       const link = document.createElement('link')
       link.rel = 'stylesheet'
@@ -43,9 +40,8 @@ export default function Sidebar({
         <h2>YM FURNITUR</h2>
       </div>
       <ul className="sidebar-menu">
-        {menuItems.map(item => (
+        {menuItems.map((item) => (
           <li key={item.id}>
-            {/* ✅ Kembali pakai <a> agar CSS sidebar tetap jalan */}
             
               href="#"
               className={activeSection === item.id ? 'active' : ''}
