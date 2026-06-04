@@ -10,22 +10,22 @@ export default function Sidebar({
   onSectionChange: (section: string) => void
 }) {
   const menuItems = [
-    { id: 'dashboard',  label: 'Dashboard',       icon: 'fa-chart-pie' },
-    { id: 'produk',     label: 'Produk',           icon: 'fa-box' },
-    { id: 'kategori',   label: 'Kategori',         icon: 'fa-tags' },
-    { id: 'transaksi',  label: 'Transaksi',        icon: 'fa-shopping-cart' },
-    { id: 'testimoni',  label: 'Testimoni',        icon: 'fa-star' },
-    { id: 'promo',      label: 'Promo',            icon: 'fa-percent' },
-    { id: 'ongkir',     label: 'Ongkir',           icon: 'fa-truck' },
-    { id: 'grafik',     label: 'Grafik',           icon: 'fa-chart-bar' },
-    { id: 'backup',     label: 'Backup & Restore', icon: 'fa-database' },
-    { id: 'log',        label: 'Aktivitas Log',    icon: 'fa-history' },
-    { id: 'footer',     label: 'Footer',           icon: 'fa-edit' },
-    { id: 'pengaturan', label: 'Pengaturan',       icon: 'fa-cog' },
+    { id: 'dashboard', label: 'Dashboard', icon: 'fa-chart-pie' },
+    { id: 'produk', label: 'Produk', icon: 'fa-box' },
+    { id: 'kategori', label: 'Kategori', icon: 'fa-tags' },
+    { id: 'transaksi', label: 'Transaksi', icon: 'fa-shopping-cart' },
+    { id: 'testimoni', label: 'Testimoni', icon: 'fa-star' },
+    { id: 'promo', label: 'Promo', icon: 'fa-percent' },
+    { id: 'ongkir', label: 'Ongkir', icon: 'fa-truck' },
+    { id: 'grafik', label: 'Grafik', icon: 'fa-chart-bar' },
+    { id: 'backup', label: 'Backup & Restore', icon: 'fa-database' },
+    { id: 'log', label: 'Aktivitas Log', icon: 'fa-history' },
+    { id: 'footer', label: 'Footer', icon: 'fa-edit' },
+    { id: 'pengaturan', label: 'Pengaturan', icon: 'fa-cog' },
   ]
 
   useEffect(() => {
-    const existing = document.querySelector('link[href*="font-awesome"], link[href*="fontawesome"]')
+    const existing = document.querySelector('link[href*="font-awesome"]')
     if (!existing) {
       const link = document.createElement('link')
       link.rel = 'stylesheet'
@@ -42,7 +42,7 @@ export default function Sidebar({
       <ul className="sidebar-menu">
         {menuItems.map((item) => (
           <li key={item.id}>
-            
+            <a
               href="#"
               className={activeSection === item.id ? 'active' : ''}
               onClick={(e) => {
@@ -50,7 +50,7 @@ export default function Sidebar({
                 onSectionChange(item.id)
               }}
             >
-              <i className={`fas ${item.icon}`}></i>
+              <i className={'fas ' + item.icon}></i>
               <span>{item.label}</span>
             </a>
           </li>
