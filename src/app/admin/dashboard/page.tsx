@@ -158,6 +158,8 @@ export default function AdminDashboard() {
         return <TestimonialManager />
       case 'promo':
         return <PromoManager />
+      case 'ongkir':
+        return <OngkirManager />
       case 'grafik':
         return <Chart />
       case 'backup':
