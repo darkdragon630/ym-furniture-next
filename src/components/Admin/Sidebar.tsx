@@ -8,6 +8,7 @@ export default function Sidebar({ activeSection, onSectionChange }: { activeSect
     { id: 'transaksi', label: 'Transaksi', icon: 'fa-shopping-cart' },
     { id: 'testimoni', label: 'Testimoni', icon: 'fa-star' },
     { id: 'promo', label: 'Promo', icon: 'fa-tags' },
+    { id: 'ongkir', label: 'Ongkir', icon: 'fa-truck' },
     { id: 'grafik', label: 'Grafik', icon: 'fa-chart-bar' },
     { id: 'backup', label: 'Backup & Restore', icon: 'fa-database' },
     { id: 'log', label: 'Aktivitas Log', icon: 'fa-history' },
