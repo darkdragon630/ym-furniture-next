@@ -1,5 +1,7 @@
 'use client'
 
+import { useEffect } from 'react'
+
 export default function Sidebar({
   activeSection,
   onSectionChange,
@@ -8,19 +10,32 @@ export default function Sidebar({
   onSectionChange: (section: string) => void
 }) {
   const menuItems = [
-    { id: 'dashboard', label: 'Dashboard', icon: 'fa-chart-pie' },
-    { id: 'produk', label: 'Produk', icon: 'fa-box' },
-    { id: 'kategori', label: 'Kategori', icon: 'fa-tags' },
-    { id: 'transaksi', label: 'Transaksi', icon: 'fa-shopping-cart' },
-    { id: 'testimoni', label: 'Testimoni', icon: 'fa-star' },
-    { id: 'promo', label: 'Promo', icon: 'fa-percent' },
-    { id: 'ongkir', label: 'Ongkir', icon: 'fa-truck' },
-    { id: 'grafik', label: 'Grafik', icon: 'fa-chart-bar' },
-    { id: 'backup', label: 'Backup & Restore', icon: 'fa-database' },
-    { id: 'log', label: 'Aktivitas Log', icon: 'fa-history' },
-    { id: 'footer', label: 'Footer', icon: 'fa-edit' },
-    { id: 'pengaturan', label: 'Pengaturan', icon: 'fa-cog' },
+    { id: 'dashboard',  label: 'Dashboard',       icon: 'fa-chart-pie' },
+    { id: 'produk',     label: 'Produk',           icon: 'fa-box' },
+    { id: 'kategori',   label: 'Kategori',         icon: 'fa-tags' },
+    { id: 'transaksi',  label: 'Transaksi',        icon: 'fa-shopping-cart' },
+    { id: 'testimoni',  label: 'Testimoni',        icon: 'fa-star' },
+    { id: 'promo',      label: 'Promo',            icon: 'fa-percent' },
+    { id: 'ongkir',     label: 'Ongkir',           icon: 'fa-truck' },
+    { id: 'grafik',     label: 'Grafik',           icon: 'fa-chart-bar' },
+    { id: 'backup',     label: 'Backup & Restore', icon: 'fa-database' },
+    { id: 'log',        label: 'Aktivitas Log',    icon: 'fa-history' },
+    { id: 'footer',     label: 'Footer',           icon: 'fa-edit' },
+    { id: 'pengaturan', label: 'Pengaturan',       icon: 'fa-cog' },
   ]
+
+  // ✅ Load Font Awesome jika belum ada
+  useEffect(() => {
+    const existing = document.querySelector(
+      'link[href*="font-awesome"], link[href*="fontawesome"]'
+    )
+    if (!existing) {
+      const link = document.createElement('link')
+      link.rel = 'stylesheet'
+      link.href = 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css'
+      document.head.appendChild(link)
+    }
+  }, [])
 
   return (
     <aside className="sidebar">
@@ -30,15 +45,18 @@ export default function Sidebar({
       <ul className="sidebar-menu">
         {menuItems.map(item => (
           <li key={item.id}>
-            {/* ✅ FIX: Ganti <a href="#"> dengan <button> — tidak ada href side-effect */}
-            <button
+            {/* ✅ Kembali pakai <a> agar CSS sidebar tetap jalan */}
+            
+              href="#"
               className={activeSection === item.id ? 'active' : ''}
-              onClick={() => onSectionChange(item.id)}
-              aria-current={activeSection === item.id ? 'page' : undefined}
+              onClick={(e) => {
+                e.preventDefault()
+                onSectionChange(item.id)
+              }}
             >
               <i className={`fas ${item.icon}`}></i>
               <span>{item.label}</span>
-            </button>
+            </a>
           </li>
         ))}
       </ul>
