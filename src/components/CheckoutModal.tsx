@@ -26,6 +26,17 @@ export default function CheckoutModal() {
     closeCart,
   } = useCart()
 
+  // ✅ Hitung subtotal dan potongan di sini (sebelum useEffect)
+  const subtotal = cart.reduce((sum, item) => {
+    const price = item.diskon > 0 
+      ? Math.round(item.harga * (1 - item.diskon / 100)) 
+      : item.harga
+    return sum + price * item.qty
+  }, 0)
+
+  const potongan = Math.round(subtotal * promoDiscount / 100)
+  const total = subtotal - potongan
+
   // Dengar event dari CartModal untuk membuka modal
   useEffect(() => {
     const handleOpen = () => setIsOpen(true)
@@ -73,16 +84,6 @@ export default function CheckoutModal() {
 
   // Modal terbuka jika isOpen true
   if (!isOpen) return null
-
-  const subtotal = cart.reduce((sum, item) => {
-    const price = item.diskon > 0 
-      ? Math.round(item.harga * (1 - item.diskon / 100)) 
-      : item.harga
-    return sum + price * item.qty
-  }, 0)
-
-  const potongan = Math.round(subtotal * promoDiscount / 100)
-  const total = subtotal - potongan
 
   const handleClose = () => {
     setIsOpen(false)
