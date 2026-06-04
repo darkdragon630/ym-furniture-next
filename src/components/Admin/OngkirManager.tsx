@@ -15,7 +15,6 @@ interface Ongkir {
 }
 
 export default function OngkirManager() {
-  // ✅ Berikan type annotation
   const [ongkirList, setOngkirList] = useState<Ongkir[]>([])
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editingOngkir, setEditingOngkir] = useState<Ongkir | null>(null)
@@ -79,7 +78,12 @@ export default function OngkirManager() {
       loadOngkir()
     } catch (error) {
       console.error('Error saving ongkir:', error)
-      alert('Gagal menyimpan ongkir: ' + error.message)
+      // ✅ Type guard untuk error
+      if (error instanceof Error) {
+        alert('Gagal menyimpan ongkir: ' + error.message)
+      } else {
+        alert('Gagal menyimpan ongkir: Terjadi kesalahan yang tidak diketahui')
+      }
     }
   }
 
@@ -97,7 +101,12 @@ export default function OngkirManager() {
       loadOngkir()
     } catch (error) {
       console.error('Error deleting ongkir:', error)
-      alert('Gagal menghapus ongkir: ' + error.message)
+      // ✅ Type guard untuk error
+      if (error instanceof Error) {
+        alert('Gagal menghapus ongkir: ' + error.message)
+      } else {
+        alert('Gagal menghapus ongkir: Terjadi kesalahan yang tidak diketahui')
+      }
     }
   }
 
