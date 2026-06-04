@@ -1,18 +1,19 @@
 'use client'
-
-import { useState } from 'react'
+import { useState, useCallback } from 'react' // ← tambah useCallback
 import { supabase } from '@/lib/supabase'
 
 export function useAdmin() {
   const [isAdmin, setIsAdmin] = useState(false)
   const [adminData, setAdminData] = useState<any>(null)
 
-  const checkAdminSession = () => {
+  // ✅ FIX 1: Bungkus dengan useCallback agar referensi stabil
+  const checkAdminSession = useCallback(() => {
+    if (typeof window === 'undefined') return false // ✅ FIX 2: Aman untuk SSR
     const sid = sessionStorage.getItem('ym_sid')
     return !!sid
-  }
+  }, []) // dependency kosong = referensi tidak pernah berubah
 
-  const adminLogin = async (email: string, password: string) => {
+  const adminLogin = useCallback(async (email: string, password: string) => {
     try {
       const { data: admin, error } = await supabase
         .from('admin')
@@ -24,6 +25,8 @@ export function useAdmin() {
         return { error: 'Email atau password salah!' }
       }
 
+      // ⚠️ PERINGATAN: atob() bukan enkripsi yang aman!
+      // Idealnya gunakan bcrypt di sisi server/edge function
       if (atob(admin.password) !== password) {
         return { error: 'Email atau password salah!' }
       }
@@ -36,22 +39,20 @@ export function useAdmin() {
         .update({ sid, last_login: loginTime })
         .eq('id', admin.id)
 
-      // Simpan di sessionStorage
       sessionStorage.setItem('ym_sid', sid)
       sessionStorage.setItem('ym_email', email)
       sessionStorage.setItem('ym_nama', admin.nama_lengkap)
       sessionStorage.setItem('ym_login_time', loginTime)
 
-      // Simpan di cookie untuk middleware
       document.cookie = `ym_sid=${sid}; path=/; max-age=86400; SameSite=Lax`
 
       return { success: true, admin }
     } catch (err) {
       return { error: 'Terjadi kesalahan. Silakan coba lagi.' }
     }
-  }
+  }, [])
 
-  const adminRegister = async (nama: string, email: string, password: string) => {
+  const adminRegister = useCallback(async (nama: string, email: string, password: string) => {
     try {
       const { data: existingAdmin } = await supabase
         .from('admin')
@@ -68,7 +69,7 @@ export function useAdmin() {
         .insert([{
           nama_lengkap: nama,
           email: email,
-          password: btoa(password),
+          password: btoa(password), // ⚠️ Ganti dengan hashing yang proper
           role: 'admin',
         }])
 
@@ -80,12 +81,12 @@ export function useAdmin() {
     } catch (err) {
       return { error: 'Terjadi kesalahan. Silakan coba lagi.' }
     }
-  }
+  }, [])
 
-  const adminLogout = () => {
+  const adminLogout = useCallback(() => {
     sessionStorage.clear()
     document.cookie = 'ym_sid=; path=/; max-age=0'
-  }
+  }, [])
 
   return {
     isAdmin,
