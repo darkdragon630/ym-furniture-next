@@ -3,10 +3,22 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 
+// Definisikan interface untuk data ongkir
+interface Ongkir {
+  id: number
+  ekspedisi: string
+  wilayah: string
+  biaya: number
+  estimasi_hari: number
+  aktif: boolean
+  created_at: string
+}
+
 export default function OngkirManager() {
-  const [ongkirList, setOngkirList] = useState([])
+  // ✅ Berikan type annotation
+  const [ongkirList, setOngkirList] = useState<Ongkir[]>([])
   const [isModalOpen, setIsModalOpen] = useState(false)
-  const [editingOngkir, setEditingOngkir] = useState<any>(null)
+  const [editingOngkir, setEditingOngkir] = useState<Ongkir | null>(null)
   const [formData, setFormData] = useState({
     ekspedisi: '',
     wilayah: '',
@@ -20,15 +32,22 @@ export default function OngkirManager() {
   }, [])
 
   const loadOngkir = async () => {
-    const { data } = await supabase
-      .from('ongkir')
-      .select('*')
-      .order('id', { ascending: false })
-    if (data) setOngkirList(data)
+    try {
+      const { data, error } = await supabase
+        .from('ongkir')
+        .select('*')
+        .order('id', { ascending: false })
+      
+      if (error) throw error
+      setOngkirList(data || [])
+    } catch (error) {
+      console.error('Error loading ongkir:', error)
+    }
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    
     try {
       const data = {
         ekspedisi: formData.ekspedisi,
@@ -39,21 +58,53 @@ export default function OngkirManager() {
       }
 
       if (editingOngkir) {
-        await supabase.from('ongkir').update(data).eq('id', editingOngkir.id)
+        const { error } = await supabase
+          .from('ongkir')
+          .update(data)
+          .eq('id', editingOngkir.id)
+        
+        if (error) throw error
+        alert('Ongkir berhasil diupdate!')
       } else {
-        await supabase.from('ongkir').insert([data])
+        const { error } = await supabase
+          .from('ongkir')
+          .insert([data])
+        
+        if (error) throw error
+        alert('Ongkir berhasil ditambahkan!')
       }
+      
       setIsModalOpen(false)
+      setEditingOngkir(null)
       loadOngkir()
     } catch (error) {
-      console.error('Error:', error)
+      console.error('Error saving ongkir:', error)
+      alert('Gagal menyimpan ongkir: ' + error.message)
+    }
+  }
+
+  const handleDelete = async (id: number) => {
+    if (!confirm('Yakin ingin menghapus ongkir ini?')) return
+    
+    try {
+      const { error } = await supabase
+        .from('ongkir')
+        .delete()
+        .eq('id', id)
+      
+      if (error) throw error
+      alert('Ongkir berhasil dihapus!')
+      loadOngkir()
+    } catch (error) {
+      console.error('Error deleting ongkir:', error)
+      alert('Gagal menghapus ongkir: ' + error.message)
     }
   }
 
   return (
     <div className="admin-section">
       <div className="section-header">
-        <h2>🚚 Manajemen Ongkir</h2>
+        <h2><i className="fas fa-truck"></i> Manajemen Ongkir</h2>
         <button className="btn-primary" onClick={() => {
           setEditingOngkir(null)
           setFormData({
@@ -83,7 +134,7 @@ export default function OngkirManager() {
             </tr>
           </thead>
           <tbody>
-            {ongkirList.map((o: any) => (
+            {ongkirList.map((o: Ongkir) => (
               <tr key={o.id}>
                 <td>{o.id}</td>
                 <td><strong>{o.ekspedisi}</strong></td>
@@ -96,23 +147,28 @@ export default function OngkirManager() {
                   </span>
                 </td>
                 <td>
-                  <button className="btn-small" onClick={() => {
-                    setEditingOngkir(o)
-                    setFormData({
-                      ekspedisi: o.ekspedisi,
-                      wilayah: o.wilayah,
-                      biaya: o.biaya.toString(),
-                      estimasi_hari: o.estimasi_hari.toString(),
-                      aktif: o.aktif,
-                    })
-                    setIsModalOpen(true)
-                  }}>✏️</button>
-                  <button className="btn-small btn-danger" onClick={async () => {
-                    if (confirm('Yakin ingin menghapus?')) {
-                      await supabase.from('ongkir').delete().eq('id', o.id)
-                      loadOngkir()
-                    }
-                  }}>🗑️</button>
+                  <button 
+                    className="btn-small" 
+                    onClick={() => {
+                      setEditingOngkir(o)
+                      setFormData({
+                        ekspedisi: o.ekspedisi,
+                        wilayah: o.wilayah,
+                        biaya: o.biaya.toString(),
+                        estimasi_hari: o.estimasi_hari.toString(),
+                        aktif: o.aktif,
+                      })
+                      setIsModalOpen(true)
+                    }}
+                  >
+                    ✏️
+                  </button>
+                  <button 
+                    className="btn-small btn-danger" 
+                    onClick={() => handleDelete(o.id)}
+                  >
+                    🗑️
+                  </button>
                 </td>
               </tr>
             ))}
