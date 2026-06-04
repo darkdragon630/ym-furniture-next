@@ -1,13 +1,19 @@
 'use client'
 
-export default function Sidebar({ activeSection, onSectionChange }: { activeSection: string, onSectionChange: (section: string) => void }) {
+export default function Sidebar({
+  activeSection,
+  onSectionChange,
+}: {
+  activeSection: string
+  onSectionChange: (section: string) => void
+}) {
   const menuItems = [
     { id: 'dashboard', label: 'Dashboard', icon: 'fa-chart-pie' },
     { id: 'produk', label: 'Produk', icon: 'fa-box' },
     { id: 'kategori', label: 'Kategori', icon: 'fa-tags' },
     { id: 'transaksi', label: 'Transaksi', icon: 'fa-shopping-cart' },
     { id: 'testimoni', label: 'Testimoni', icon: 'fa-star' },
-    { id: 'promo', label: 'Promo', icon: 'fa-tags' },
+    { id: 'promo', label: 'Promo', icon: 'fa-percent' },
     { id: 'ongkir', label: 'Ongkir', icon: 'fa-truck' },
     { id: 'grafik', label: 'Grafik', icon: 'fa-chart-bar' },
     { id: 'backup', label: 'Backup & Restore', icon: 'fa-database' },
@@ -24,17 +30,15 @@ export default function Sidebar({ activeSection, onSectionChange }: { activeSect
       <ul className="sidebar-menu">
         {menuItems.map(item => (
           <li key={item.id}>
-            <a
-              href="#"
+            {/* ✅ FIX: Ganti <a href="#"> dengan <button> — tidak ada href side-effect */}
+            <button
               className={activeSection === item.id ? 'active' : ''}
-              onClick={(e) => {
-                e.preventDefault()
-                onSectionChange(item.id)
-              }}
+              onClick={() => onSectionChange(item.id)}
+              aria-current={activeSection === item.id ? 'page' : undefined}
             >
               <i className={`fas ${item.icon}`}></i>
               <span>{item.label}</span>
-            </a>
+            </button>
           </li>
         ))}
       </ul>
