@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useCart } from '@/context/CartContext'
 import { useRouter } from 'next/navigation'
+import { supabase } from '@/lib/supabase'
 
 export default function CheckoutModal() {
   const router = useRouter()
@@ -10,8 +11,13 @@ export default function CheckoutModal() {
   const [hp, setHp] = useState('')
   const [alamat, setAlamat] = useState('')
   const [ekspedisi, setEkspedisi] = useState('')
+  const [wilayah, setWilayah] = useState('')
   const [catatan, setCatatan] = useState('')
   const [isOpen, setIsOpen] = useState(false)
+  const [ongkirOptions, setOngkirOptions] = useState<any[]>([])
+  const [selectedOngkir, setSelectedOngkir] = useState(0)
+  const [totalDenganOngkir, setTotalDenganOngkir] = useState(0)
+  const [loadingOngkir, setLoadingOngkir] = useState(false)
 
   const {
     cart,
@@ -27,7 +33,45 @@ export default function CheckoutModal() {
     return () => document.removeEventListener('openCheckout', handleOpen)
   }, [])
 
-  // Modal terbuka jika isOpen true atau jika user klik closeCart
+  // Load ongkir berdasarkan ekspedisi dan wilayah
+  useEffect(() => {
+    const loadOngkir = async () => {
+      if (ekspedisi && wilayah) {
+        setLoadingOngkir(true)
+        try {
+          const { data, error } = await supabase
+            .from('ongkir')
+            .select('*')
+            .eq('ekspedisi', ekspedisi)
+            .eq('wilayah', wilayah)
+            .eq('aktif', true)
+          
+          if (error) throw error
+          
+          if (data && data.length > 0) {
+            setOngkirOptions(data)
+            setSelectedOngkir(data[0].biaya)
+            setTotalDenganOngkir(subtotal - potongan + data[0].biaya)
+          } else {
+            setOngkirOptions([])
+            setSelectedOngkir(0)
+            setTotalDenganOngkir(subtotal - potongan)
+          }
+        } catch (error) {
+          console.error('Error loading ongkir:', error)
+        } finally {
+          setLoadingOngkir(false)
+        }
+      } else {
+        setOngkirOptions([])
+        setSelectedOngkir(0)
+        setTotalDenganOngkir(subtotal - potongan)
+      }
+    }
+    loadOngkir()
+  }, [ekspedisi, wilayah, subtotal, potongan])
+
+  // Modal terbuka jika isOpen true
   if (!isOpen) return null
 
   const subtotal = cart.reduce((sum, item) => {
@@ -63,6 +107,10 @@ export default function CheckoutModal() {
       alert('⚠️ Pilih ekspedisi terlebih dahulu!')
       return
     }
+    if (!wilayah) {
+      alert('⚠️ Wilayah harus diisi!')
+      return
+    }
 
     const itemsList = cart.map(item => 
       `• ${item.nama} ×${item.qty} = Rp ${((item.diskon > 0 ? Math.round(item.harga * (1 - item.diskon / 100)) : item.harga) * item.qty).toLocaleString()}`
@@ -75,7 +123,9 @@ Saya ingin memesan mebel:
 📦 *PESANAN:*
 ${itemsList}
 ${promoDiscount > 0 ? `\n💸 Kode Promo: -${promoDiscount}% (-Rp ${potongan.toLocaleString()})` : ''}
-💰 *Total: Rp ${total.toLocaleString()}*
+💰 *Total: Rp ${totalDenganOngkir.toLocaleString()}*
+🚚 *Ongkir: Rp ${selectedOngkir.toLocaleString()}*
+📍 *Wilayah: ${wilayah}*
 
 📋 *DATA PEMESAN:*
 Nama: ${nama}
@@ -105,7 +155,7 @@ Terima kasih 🙏`
           {/* Dashboard Ringkasan */}
           <div style={{ background: 'linear-gradient(135deg,#1A1209,#3D2008)', borderRadius: '10px', padding: '20px', marginBottom: '20px' }}>
             <p style={{ color: '#C49A35', fontSize: '0.72rem', letterSpacing: '2px', textTransform: 'uppercase', marginBottom: '12px' }}>✦ Ringkasan Pesanan</p>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '10px', marginBottom: '14px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: '10px', marginBottom: '14px' }}>
               <div style={{ background: 'rgba(196,154,53,0.12)', border: '1px solid rgba(196,154,53,0.25)', borderRadius: '8px', padding: '12px', textAlign: 'center' }}>
                 <div style={{ fontSize: '1.8rem', fontFamily: 'Playfair Display,serif', color: '#C49A35' }}>{cart.length}</div>
                 <div style={{ fontSize: '0.7rem', color: 'rgba(245,239,224,0.55)', marginTop: '2px' }}>Item</div>
@@ -114,8 +164,12 @@ Terima kasih 🙏`
                 <div style={{ fontSize: '0.95rem', fontWeight: '600', color: '#C49A35' }}>Rp {subtotal.toLocaleString()}</div>
                 <div style={{ fontSize: '0.7rem', color: 'rgba(245,239,224,0.55)', marginTop: '2px' }}>Subtotal</div>
               </div>
+              <div style={{ background: 'rgba(196,154,53,0.12)', border: '1px solid rgba(196,154,53,0.25)', borderRadius: '8px', padding: '12px', textAlign: 'center' }}>
+                <div style={{ fontSize: '0.95rem', fontWeight: '600', color: '#C49A35' }}>Rp {selectedOngkir.toLocaleString()}</div>
+                <div style={{ fontSize: '0.7rem', color: 'rgba(245,239,224,0.55)', marginTop: '2px' }}>Ongkir</div>
+              </div>
               <div style={{ background: 'rgba(37,211,102,0.1)', border: '1px solid rgba(37,211,102,0.25)', borderRadius: '8px', padding: '12px', textAlign: 'center' }}>
-                <div style={{ fontSize: '0.95rem', fontWeight: '600', color: '#4ade80' }}>Rp {total.toLocaleString()}</div>
+                <div style={{ fontSize: '0.95rem', fontWeight: '600', color: '#4ade80' }}>Rp {totalDenganOngkir.toLocaleString()}</div>
                 <div style={{ fontSize: '0.7rem', color: 'rgba(245,239,224,0.55)', marginTop: '2px' }}>Total Bayar</div>
               </div>
             </div>
@@ -134,6 +188,15 @@ Terima kasih 🙏`
           <div className="form-group">
             <label>Alamat Lengkap *</label>
             <textarea value={alamat} onChange={(e) => setAlamat(e.target.value)} placeholder="Jalan, RT/RW, Kelurahan, Kecamatan, Kota, Provinsi, Kode Pos"></textarea>
+          </div>
+          <div className="form-group">
+            <label>Wilayah *</label>
+            <input 
+              type="text" 
+              value={wilayah} 
+              onChange={(e) => setWilayah(e.target.value)} 
+              placeholder="Jakarta, Bandung, Surabaya, dll"
+            />
           </div>
           <div className="form-group">
             <label>Pilih Ekspedisi *</label>
