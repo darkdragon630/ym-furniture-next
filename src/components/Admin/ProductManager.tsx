@@ -3,7 +3,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { supabase } from '@/lib/supabase'
 
-// Definisikan interface untuk data produk dan kategori
 interface Category {
   id: number
   nama: string
@@ -24,181 +23,190 @@ interface Product {
   created_at: string
 }
 
+const EMPTY_FORM = {
+  nama: '',
+  kategori_id: '',
+  harga: '',
+  diskon: '0',
+  deskripsi: '',
+  gambar: '',
+  baru: false,
+}
+
 export default function ProductManager() {
   const [products, setProducts] = useState<Product[]>([])
   const [categories, setCategories] = useState<Category[]>([])
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editingProduct, setEditingProduct] = useState<Product | null>(null)
-  const [formData, setFormData] = useState({
-    nama: '',
-    kategori_id: '',
-    harga: '',
-    diskon: '0',
-    deskripsi: '',
-    gambar: '',
-    baru: false,
-  })
+  const [formData, setFormData] = useState(EMPTY_FORM)
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
-  // Gunakan ref untuk mencegah multiple fetch
   const isMounted = useRef(true)
-  const isFetching = useRef(false)
 
+  // ✅ FIX: Pisahkan ref per fungsi, bukan shared
+  const isFetchingProducts = useRef(false)
+  const isFetchingCategories = useRef(false)
+
+  // ✅ FIX: loadProducts pakai ref sendiri
   const loadProducts = useCallback(async () => {
-    if (isFetching.current) return
-    isFetching.current = true
-    
+    if (isFetchingProducts.current) return
+    isFetchingProducts.current = true
+
     try {
       const { data, error } = await supabase
         .from('produk')
         .select('*, kategori(*)')
         .order('id', { ascending: false })
-      
+
       if (error) throw error
-      
-      if (isMounted.current) {
-        setProducts(data || [])
-      }
+      if (isMounted.current) setProducts(data || [])
     } catch (error) {
       console.error('Error loading products:', error)
     } finally {
-      isFetching.current = false
+      isFetchingProducts.current = false
     }
   }, [])
 
+  // ✅ FIX: loadCategories pakai ref sendiri, tidak bentrok
   const loadCategories = useCallback(async () => {
-    if (isFetching.current) return
-    isFetching.current = true
-    
+    if (isFetchingCategories.current) return
+    isFetchingCategories.current = true
+
     try {
       const { data, error } = await supabase
         .from('kategori')
         .select('*')
-        .order('id', { ascending: false })
-      
+        .order('nama', { ascending: true })
+
       if (error) throw error
-      
-      if (isMounted.current) {
-        setCategories(data || [])
-      }
+      if (isMounted.current) setCategories(data || [])
     } catch (error) {
       console.error('Error loading categories:', error)
     } finally {
-      isFetching.current = false
+      isFetchingCategories.current = false
     }
   }, [])
 
   useEffect(() => {
     isMounted.current = true
-    loadProducts()
-    loadCategories()
-    
+
+    // ✅ Jalankan keduanya parallel, tidak saling blokir
+    Promise.all([loadProducts(), loadCategories()])
+
     return () => {
       isMounted.current = false
     }
   }, [loadProducts, loadCategories])
 
-  const handleEdit = async (id: number) => {
-    try {
-      const { data, error } = await supabase
-        .from('produk')
-        .select('*, kategori(*)')
-        .eq('id', id)
-        .maybeSingle()
-      
-      if (error) throw error
-      
-      if (!data) {
-        alert('Produk tidak ditemukan!')
-        return
-      }
-      
-      setEditingProduct(data)
-      setFormData({
-        nama: data.nama || '',
-        kategori_id: data.kategori_id?.toString() || '',
-        harga: data.harga?.toString() || '',
-        diskon: data.diskon?.toString() || '0',
-        deskripsi: data.deskripsi || '',
-        gambar: data.gambar || '',
-        baru: data.baru || false,
-      })
-      setIsModalOpen(true)
-    } catch (error) {
-      console.error('Error loading product:', error)
-      if (error instanceof Error) {
-        alert('Gagal load data produk: ' + error.message)
-      } else {
-        alert('Gagal load data produk: Terjadi kesalahan yang tidak diketahui')
-      }
+  // ✅ FIX: handleEdit ambil dari state lokal, tidak fetch ulang ke DB
+  const handleEdit = (id: number) => {
+    const product = products.find(p => p.id === id)
+    if (!product) {
+      alert('Produk tidak ditemukan!')
+      return
     }
+
+    setEditingProduct(product)
+    setFormData({
+      nama: product.nama || '',
+      kategori_id: product.kategori_id?.toString() || '',
+      harga: product.harga?.toString() || '',
+      diskon: product.diskon?.toString() || '0',
+      deskripsi: product.deskripsi || '',
+      gambar: product.gambar || '',
+      baru: product.baru || false,
+    })
+    setIsModalOpen(true)
+  }
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false)
+    setEditingProduct(null)
+    setFormData(EMPTY_FORM)
   }
 
   const handleDelete = async (id: number) => {
     if (!confirm('Yakin ingin menghapus produk ini?')) return
-    
+
     try {
       const { error } = await supabase
         .from('produk')
         .delete()
         .eq('id', id)
-      
+
       if (error) throw error
+
+      // ✅ FIX: Update state lokal langsung, tidak fetch ulang
+      if (isMounted.current) {
+        setProducts(prev => prev.filter(p => p.id !== id))
+      }
       alert('Produk berhasil dihapus!')
-      loadProducts()
     } catch (error) {
       console.error('Error deleting product:', error)
-      if (error instanceof Error) {
-        alert('Gagal menghapus produk: ' + error.message)
-      } else {
-        alert('Gagal menghapus produk: Terjadi kesalahan yang tidak diketahui')
-      }
+      alert('Gagal menghapus produk: ' + (error instanceof Error ? error.message : 'Terjadi kesalahan'))
     }
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    
+
+    // ✅ FIX: Guard double submit
+    if (isSubmitting) return
+    setIsSubmitting(true)
+
     try {
-      const kategoriId = formData.kategori_id ? parseInt(formData.kategori_id) : null
-      
-      const data = {
-        nama: formData.nama,
-        kategori_id: kategoriId,
+      const payload = {
+        nama: formData.nama.trim(),
+        kategori_id: formData.kategori_id ? parseInt(formData.kategori_id) : null,
         harga: parseInt(formData.harga) || 0,
         diskon: parseInt(formData.diskon) || 0,
-        deskripsi: formData.deskripsi || '',
-        gambar: formData.gambar || '',
+        deskripsi: formData.deskripsi.trim() || '',
+        gambar: formData.gambar.trim() || '',
         baru: formData.baru,
       }
 
       if (editingProduct) {
-        const { error } = await supabase
+        const { data, error } = await supabase
           .from('produk')
-          .update(data)
+          .update(payload)
           .eq('id', editingProduct.id)
-        
+          .select('*, kategori(*)')
+          .single()
+
         if (error) throw error
+
+        // ✅ FIX: Update state lokal langsung tanpa re-fetch
+        if (isMounted.current && data) {
+          setProducts(prev => prev.map(p => p.id === editingProduct.id ? data : p))
+        }
         alert('Produk berhasil diupdate!')
       } else {
-        const { error } = await supabase
+        const { data, error } = await supabase
           .from('produk')
-          .insert([data])
-        
+          .insert([payload])
+          .select('*, kategori(*)')
+          .single()
+
         if (error) throw error
+
+        // ✅ FIX: Tambahkan ke state lokal tanpa re-fetch
+        if (isMounted.current && data) {
+          setProducts(prev => [data, ...prev])
+        }
         alert('Produk berhasil ditambahkan!')
       }
-      
-      setIsModalOpen(false)
-      setEditingProduct(null)
-      loadProducts()
+
+      handleCloseModal()
     } catch (error) {
       console.error('Error saving product:', error)
-      if (error instanceof Error) {
-        alert('Gagal menyimpan produk: ' + error.message)
-      } else {
-        alert('Gagal menyimpan produk: Terjadi kesalahan yang tidak diketahui')
-      }
+      alert('Gagal menyimpan produk: ' + (error instanceof Error ? error.message : 'Terjadi kesalahan'))
+    } finally {
+      setIsSubmitting(false)
     }
+  }
+
+  const updateField = <K extends keyof typeof EMPTY_FORM>(key: K, value: typeof EMPTY_FORM[K]) => {
+    setFormData(prev => ({ ...prev, [key]: value }))
   }
 
   return (
@@ -207,15 +215,7 @@ export default function ProductManager() {
         <h2><i className="fas fa-box"></i> Manajemen Produk</h2>
         <button className="btn-primary" onClick={() => {
           setEditingProduct(null)
-          setFormData({
-            nama: '',
-            kategori_id: '',
-            harga: '',
-            diskon: '0',
-            deskripsi: '',
-            gambar: '',
-            baru: false,
-          })
+          setFormData(EMPTY_FORM)
           setIsModalOpen(true)
         }}>
           <i className="fas fa-plus"></i> Tambah Produk
@@ -236,50 +236,66 @@ export default function ProductManager() {
             </tr>
           </thead>
           <tbody>
-            {products.map((p: Product) => (
-              <tr key={p.id}>
-                <td>{p.id}</td>
-                <td>
-                  {p.gambar && (
-                    <img 
-                      src={p.gambar} 
-                      alt={p.nama}
-                      style={{ width: '50px', height: '50px', objectFit: 'cover', borderRadius: '4px' }} 
-                    />
-                  )}
-                </td>
-                <td><strong>{p.nama}</strong></td>
-                <td>{p.kategori?.nama || '-'}</td>
-                <td>Rp {p.harga?.toLocaleString() || 0}</td>
-                <td>{p.diskon > 0 ? `${p.diskon}%` : '-'}</td>
-                <td>
-                  <button 
-                    className="btn-small" 
-                    onClick={() => handleEdit(p.id)}
-                    style={{ marginRight: '5px' }}
-                  >
-                    ✏️
-                  </button>
-                  <button 
-                    className="btn-small btn-danger" 
-                    onClick={() => handleDelete(p.id)}
-                  >
-                    🗑️
-                  </button>
+            {products.length === 0 ? (
+              <tr>
+                <td colSpan={7} style={{ textAlign: 'center', padding: '20px', color: '#888' }}>
+                  Belum ada produk
                 </td>
               </tr>
-            ))}
+            ) : (
+              products.map((p: Product) => (
+                <tr key={p.id}>
+                  <td>{p.id}</td>
+                  <td>
+                    {p.gambar ? (
+                      <img
+                        src={p.gambar}
+                        alt={p.nama}
+                        style={{ width: '50px', height: '50px', objectFit: 'cover', borderRadius: '4px' }}
+                        onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}
+                      />
+                    ) : (
+                      <span style={{ color: '#ccc' }}>—</span>
+                    )}
+                  </td>
+                  <td><strong>{p.nama}</strong></td>
+                  <td>{p.kategori?.nama || '-'}</td>
+                  <td>Rp {p.harga?.toLocaleString('id-ID') || 0}</td>
+                  <td>{p.diskon > 0 ? `${p.diskon}%` : '-'}</td>
+                  <td>
+                    <button
+                      className="btn-small"
+                      onClick={() => handleEdit(p.id)}
+                      style={{ marginRight: '5px' }}
+                      title="Edit produk"
+                    >
+                      ✏️
+                    </button>
+                    <button
+                      className="btn-small btn-danger"
+                      onClick={() => handleDelete(p.id)}
+                      title="Hapus produk"
+                    >
+                      🗑️
+                    </button>
+                  </td>
+                </tr>
+              ))
+            )}
           </tbody>
         </table>
       </div>
 
       {/* Modal Form */}
       {isModalOpen && (
-        <div className="modal-overlay open">
+        <div className="modal-overlay open" onClick={(e) => {
+          // ✅ Klik di luar modal = tutup
+          if (e.target === e.currentTarget) handleCloseModal()
+        }}>
           <div className="modal-box">
             <div className="modal-header">
               <h3>{editingProduct ? 'Edit Produk' : 'Tambah Produk'}</h3>
-              <button className="btn-close" onClick={() => setIsModalOpen(false)}>✕</button>
+              <button className="btn-close" onClick={handleCloseModal}>✕</button>
             </div>
             <div className="modal-body">
               <form onSubmit={handleSubmit}>
@@ -288,7 +304,7 @@ export default function ProductManager() {
                   <input
                     type="text"
                     value={formData.nama}
-                    onChange={(e) => setFormData({ ...formData, nama: e.target.value })}
+                    onChange={(e) => updateField('nama', e.target.value)}
                     required
                   />
                 </div>
@@ -296,7 +312,7 @@ export default function ProductManager() {
                   <label>Kategori</label>
                   <select
                     value={formData.kategori_id}
-                    onChange={(e) => setFormData({ ...formData, kategori_id: e.target.value })}
+                    onChange={(e) => updateField('kategori_id', e.target.value)}
                     required
                   >
                     <option value="">Pilih Kategori</option>
@@ -306,11 +322,12 @@ export default function ProductManager() {
                   </select>
                 </div>
                 <div className="form-group">
-                  <label>Harga</label>
+                  <label>Harga (Rp)</label>
                   <input
                     type="number"
                     value={formData.harga}
-                    onChange={(e) => setFormData({ ...formData, harga: e.target.value })}
+                    onChange={(e) => updateField('harga', e.target.value)}
+                    min="0"
                     required
                   />
                 </div>
@@ -319,35 +336,64 @@ export default function ProductManager() {
                   <input
                     type="number"
                     value={formData.diskon}
-                    onChange={(e) => setFormData({ ...formData, diskon: e.target.value })}
+                    onChange={(e) => updateField('diskon', e.target.value)}
+                    min="0"
+                    max="100"
                   />
                 </div>
                 <div className="form-group">
                   <label>Deskripsi</label>
                   <textarea
                     value={formData.deskripsi}
-                    onChange={(e) => setFormData({ ...formData, deskripsi: e.target.value })}
+                    onChange={(e) => updateField('deskripsi', e.target.value)}
+                    rows={3}
                   />
                 </div>
                 <div className="form-group">
                   <label>Gambar (URL)</label>
                   <input
-                    type="text"
+                    type="url"
                     value={formData.gambar}
-                    onChange={(e) => setFormData({ ...formData, gambar: e.target.value })}
+                    onChange={(e) => updateField('gambar', e.target.value)}
+                    placeholder="https://example.com/gambar.jpg"
                   />
+                  {/* ✅ Preview gambar real-time */}
+                  {formData.gambar && (
+                    <img
+                      src={formData.gambar}
+                      alt="Preview"
+                      style={{ marginTop: '8px', width: '80px', height: '80px', objectFit: 'cover', borderRadius: '6px', border: '1px solid #ddd' }}
+                      onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}
+                    />
+                  )}
                 </div>
                 <div className="form-group">
-                  <label>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
                     <input
                       type="checkbox"
                       checked={formData.baru}
-                      onChange={(e) => setFormData({ ...formData, baru: e.target.checked })}
+                      onChange={(e) => updateField('baru', e.target.checked)}
                     />
-                    Produk Baru
+                    Tandai sebagai Produk Baru
                   </label>
                 </div>
-                <button type="submit" className="btn-primary btn-full">Simpan</button>
+                <div style={{ display: 'flex', gap: '10px' }}>
+                  <button
+                    type="button"
+                    className="btn-secondary btn-full"
+                    onClick={handleCloseModal}
+                    disabled={isSubmitting}
+                  >
+                    Batal
+                  </button>
+                  <button
+                    type="submit"
+                    className="btn-primary btn-full"
+                    disabled={isSubmitting}
+                  >
+                    {isSubmitting ? 'Menyimpan...' : 'Simpan'}
+                  </button>
+                </div>
               </form>
             </div>
           </div>
