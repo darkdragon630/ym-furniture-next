@@ -3,7 +3,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { supabase } from '@/lib/supabase'
 
-// Definisikan interface untuk data settings
 interface SettingsData {
   email: string
   wa: string
@@ -14,28 +13,31 @@ export default function SettingsManager() {
   const [notifWA, setNotifWA] = useState('on')
   const [loading, setLoading] = useState(false)
 
-  // Gunakan ref untuk mencegah multiple fetch
   const isMounted = useRef(true)
   const isFetching = useRef(false)
 
   const loadSettings = useCallback(async () => {
     if (isFetching.current) return
     isFetching.current = true
-    
+
     try {
+      // ✅ FIX: Ganti .single() → .maybeSingle()
+      // .single()      → error 406 jika 0 baris ditemukan
+      // .maybeSingle() → return null jika 0 baris, aman
       const { data, error } = await supabase
         .from('pengaturan')
         .select('*')
         .eq('key', 'notifikasi')
-        .single()
-      
-      if (error && error.code !== 'PGRST116') throw error
-      
+        .maybeSingle()
+
+      if (error) throw error
+
       if (data && isMounted.current) {
         const value = data.value as SettingsData
         setNotifEmail(value?.email || 'on')
         setNotifWA(value?.wa || 'on')
       }
+      // Jika data null → biarkan default state ('on', 'on')
     } catch (error) {
       console.error('Error loading settings:', error)
     } finally {
@@ -46,7 +48,6 @@ export default function SettingsManager() {
   useEffect(() => {
     isMounted.current = true
     loadSettings()
-    
     return () => {
       isMounted.current = false
     }
@@ -54,28 +55,22 @@ export default function SettingsManager() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    if (loading) return // ✅ Guard double submit
     setLoading(true)
 
     try {
       const { error } = await supabase
         .from('pengaturan')
-        .upsert([{
-          key: 'notifikasi',
-          value: {
-            email: notifEmail,
-            wa: notifWA
-          }
-        }], { onConflict: 'key' })
+        .upsert(
+          [{ key: 'notifikasi', value: { email: notifEmail, wa: notifWA } }],
+          { onConflict: 'key' }
+        )
 
       if (error) throw error
       alert('Pengaturan berhasil diupdate!')
     } catch (error) {
       console.error('Error updating settings:', error)
-      if (error instanceof Error) {
-        alert('Gagal update pengaturan: ' + error.message)
-      } else {
-        alert('Gagal update pengaturan: Terjadi kesalahan yang tidak diketahui')
-      }
+      alert('Gagal update pengaturan: ' + (error instanceof Error ? error.message : 'Terjadi kesalahan'))
     } finally {
       setLoading(false)
     }
